@@ -146,9 +146,9 @@ class Normal extends Generator{
 				}else{
 					//FIXME: Substituting temperature for rainfall is just a hack given
 					//that mountain biomes are supposed to be pretty cold.
-					if($rainfall < 0.25){
+					if($temperature < 0.25){
 						return Biome::MOUNTAINS;
-					}elseif($rainfall < 0.70){
+					}elseif($temperature < 0.70){
 						return Biome::SMALL_MOUNTAINS;
 					}else{
 						return Biome::RIVER;
