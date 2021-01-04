@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<buildpath>
+	<buildpathentry kind="src" path="build"/>
+	<buildpathentry kind="src" path="src/pocketmine"/>
+	<buildpathentry kind="src" path="tests/phpstan"/>
+	<buildpathentry kind="src" path="tests/phpunit/block"/>
+	<buildpathentry kind="src" path="tests/phpunit/inventory"/>
+	<buildpathentry kind="src" path="tests/phpunit/item"/>
+	<buildpathentry kind="src" path="tests/phpunit/level/format/io"/>
+	<buildpathentry kind="src" path="tests/phpunit/network/mcpe"/>
+	<buildpathentry kind="src" path="tests/phpunit/utils"/>
+	<buildpathentry kind="src" path="tests/plugins/DevTools"/>
+	<buildpathentry kind="src" path="tests/plugins/TesterPlugin/src/pmmp/TesterPlugin"/>
+	<buildpathentry kind="src" path="vendor"/>
+	<buildpathentry kind="con" path="org.eclipse.php.core.LANGUAGE"/>
+</buildpath>

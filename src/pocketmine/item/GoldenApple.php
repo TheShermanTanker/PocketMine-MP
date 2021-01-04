@@ -23,8 +23,8 @@ declare(strict_types=1);
 
 namespace pocketmine\item;
 
-use pocketmine\entity\Effect;
-use pocketmine\entity\EffectInstance;
+use pocketmine\entity\Living;
+use pocketmine\event\entity\EntityRegainHealthEvent;
 
 class GoldenApple extends Food{
 
@@ -43,11 +43,8 @@ class GoldenApple extends Food{
 	public function getSaturationRestore() : float{
 		return 9.6;
 	}
-
-	public function getAdditionalEffects() : array{
-		return [
-			new EffectInstance(Effect::getEffect(Effect::REGENERATION), 100, 1),
-			new EffectInstance(Effect::getEffect(Effect::ABSORPTION), 2400)
-		];
+	
+	public function onConsume(Living $consumer){
+	    $consumer->heal(new EntityRegainHealthEvent($consumer, 20, EntityRegainHealthEvent::CAUSE_EATING));
 	}
 }
