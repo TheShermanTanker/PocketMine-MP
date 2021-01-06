@@ -1026,8 +1026,8 @@ abstract class Entity extends Location implements Metadatable, EntityIds{
 
 		$this->checkBlockCollision();
 
-		if($this->y <= -16 and $this->isAlive()){
-			$ev = new EntityDamageEvent($this, EntityDamageEvent::CAUSE_VOID, 10);
+		if($this->y <= 0 and $this->isAlive()){
+			$ev = new EntityDamageEvent($this, EntityDamageEvent::CAUSE_VOID, 20);
 			$this->attack($ev);
 			$hasUpdate = true;
 		}
