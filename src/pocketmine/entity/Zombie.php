@@ -23,18 +23,108 @@ declare(strict_types=1);
 
 namespace pocketmine\entity;
 
+use pocketmine\Player;
+use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
-use function mt_rand;
+use pocketmine\level\Level;
+use pocketmine\math\Vector3;
+use pocketmine\block\Liquid;
+use pocketmine\block\Air;
+use pocketmine\block\Transparent;
+use pocketmine\block\Glass;
+use pocketmine\block\GlassPane;
 
 class Zombie extends Monster{
 	public const NETWORK_ID = self::ZOMBIE;
 
 	public $width = 0.6;
 	public $height = 1.8;
+	
+	private $attackDelay = 0;
+	
+	public $moveTarget = null;
 
 	public function getName() : string{
 		return "Zombie";
+	}
+	
+	public function initEntity() : void{
+	    parent::initEntity();
+	    $this->attributeMap->getAttribute(Attribute::FOLLOW_RANGE)->setDefaultValue(16.0)->resetToDefault();
+	    $this->attributeMap->getAttribute(Attribute::ATTACK_DAMAGE)->setDefaultValue(3.0)->resetToDefault();
+	    $this->attributeMap->getAttribute(Attribute::MOVEMENT_SPEED)->setDefaultValue(0.19)->resetToDefault();
+	}
+	
+	public function entityBaseTick(int $tickDiff = 1) : bool{
+	    
+	    //Calculations only
+	    if($this->attackDelay < 0){
+	        $this->attackDelay = 0;
+	    }
+	    if($this->attackDelay > 0){
+	        $this->attackDelay -= $tickDiff;
+	    }
+	    
+	    $hasUpdate = parent::entityBaseTick($tickDiff);
+	    
+	    //Actual commands to the server should only be applied here
+	    $time = $this->getLevel() !== null ? $this->getLevel()->getTime() % Level::TIME_FULL : Level::TIME_NIGHT;
+	    if(!$this->isOnFire() && ($time < Level::TIME_NIGHT || $time > Level::TIME_SUNRISE)){
+	        $this->setOnFire(100);
+	    }
+	    
+	    if(is_null($this->getTargetEntity())){ //Try to find target
+	        $nearest = pow($this->attributeMap->getAttribute(Attribute::FOLLOW_RANGE)->getValue(), 2);
+	        foreach($this->getLevel()->getNearbyEntities($this->getBoundingBox()->expandedCopy($this->attributeMap->getAttribute(Attribute::FOLLOW_RANGE)->getValue(), $this->attributeMap->getAttribute(Attribute::FOLLOW_RANGE)->getValue(), $this->attributeMap->getAttribute(Attribute::FOLLOW_RANGE)->getValue()), $this) as $potentialTarget){
+	            if($potentialTarget instanceof Player && $this->distanceSquared($potentialTarget) <= $nearest){
+	                $nearest = $this->distanceSquared($potentialTarget);
+	                $this->setTargetEntity($potentialTarget);
+	            }
+	        }
+	        
+	        if($this->moveTarget instanceof Vector3 && (pow($this->moveTarget->getX() - $this->getX(), 2) + pow($this->moveTarget->getZ() - $this->getZ(), 2)) <= 1){
+	            $this->moveTarget = null;
+	        }
+	        
+	        if(!($this->moveTarget instanceof Vector3)){
+	            $randX = random_int($this->getFloorX() - 50, $this->getFloorX() + 50);
+	            $randZ = random_int($this->getFloorZ() - 50, $this->getFloorZ() + 50);
+	            $randY = $this->getLevel()->getHighestBlockAt($randX, $randZ);
+	            $this->moveTarget = new Vector3($randX, $randY + 1, $randZ);
+	        }
+	        $this->lookAt($this->moveTarget);
+	        $normal = sqrt(pow($this->moveTarget->getX() - $this->getX(), 2) + pow($this->moveTarget->getZ() - $this->getZ(), 2));
+	        if($normal != 0 && $this->attackTime < 1 && (pow($this->moveTarget->getX() - $this->getX(), 2) + pow($this->moveTarget->getZ() - $this->getZ(), 2)) > 1){
+	            $this->motion->x = ($this->moveTarget->getX() - $this->getX()) / $normal * $this->attributeMap->getAttribute(Attribute::MOVEMENT_SPEED)->getValue();
+	            $this->motion->z = ($this->moveTarget->getZ() - $this->getZ()) / $normal * $this->attributeMap->getAttribute(Attribute::MOVEMENT_SPEED)->getValue();
+	        }
+	        $obstacle = $this->getLevel()->getBlockAt($this->getFloorX() + $this->motion->getFloorX(), $this->getFloorY(), $this->getFloorZ() + $this->motion->getFloorZ());
+	        if(($obstacle instanceof Glass || $obstacle instanceof GlassPane) || (!($obstacle instanceof Liquid) && !($obstacle instanceof Air) && !($obstacle instanceof Transparent))){
+	            $this->jump();
+	        }
+	    } else {
+	        if(!$this->getTargetEntity()->isAlive() || $this->getTargetEntity()->isClosed() || $this->distanceSquared($this->getTargetEntity()) > pow($this->attributeMap->getAttribute(Attribute::FOLLOW_RANGE)->getValue(), 2)){
+	            $this->setTargetEntity(null);
+	        } else {
+	            if($this->getTargetEntity()->distanceSquared($this) <= 1 && $this->attackDelay < 1){
+	                $this->getTargetEntity()->attack(new EntityDamageByEntityEvent($this, $this->getTargetEntity(), EntityDamageByEntityEvent::CAUSE_ENTITY_ATTACK, $this->attributeMap->getAttribute(Attribute::ATTACK_DAMAGE)->getValue()));
+	                $this->attackDelay = 10;
+	            }
+	            $this->lookAt($this->getTargetEntity());
+	            $normal = sqrt(pow($this->getTargetEntity()->getX() - $this->getX(), 2) + pow($this->getTargetEntity()->getZ() - $this->getZ(), 2));
+	            if($normal != 0 && $this->attackTime < 1 && (pow($this->moveTarget->getX() - $this->getX(), 2) + pow($this->moveTarget->getZ() - $this->getZ(), 2)) > 1){
+	                $this->motion->x = ($this->getTargetEntity()->getX() - $this->getX()) / $normal * $this->attributeMap->getAttribute(Attribute::MOVEMENT_SPEED)->getValue();
+	                $this->motion->z = ($this->getTargetEntity()->getZ() - $this->getZ()) / $normal * $this->attributeMap->getAttribute(Attribute::MOVEMENT_SPEED)->getValue();
+	            }
+	            $obstacle = $this->getLevel()->getBlockAt($this->getFloorX() + $this->motion->getFloorX(), $this->getFloorY(), $this->getFloorZ() + $this->motion->getFloorZ());
+	            if(($obstacle instanceof Glass || $obstacle instanceof GlassPane) || (!($obstacle instanceof Liquid) && !($obstacle instanceof Air) && !($obstacle instanceof Transparent))){
+	                $this->jump();
+	            }
+	        }
+	    }
+	    
+	    return $hasUpdate;
 	}
 
 	public function getDrops() : array{

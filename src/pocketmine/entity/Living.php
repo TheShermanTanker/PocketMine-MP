@@ -81,7 +81,7 @@ abstract class Living extends Entity implements Damageable{
 	protected $maxDeadTicks = 25;
 
 	/** @var float */
-	protected $jumpVelocity = 0.42;
+	protected $jumpVelocity = 0.6;
 
 	/** @var EffectInstance[] */
 	protected $effects = [];
