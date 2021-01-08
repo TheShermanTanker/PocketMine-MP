@@ -85,7 +85,6 @@ class Zombie extends Monster{
 	        
 	        if($this->moveTarget instanceof Vector3 && (pow($this->moveTarget->getX() - $this->getX(), 2) + pow($this->moveTarget->getZ() - $this->getZ(), 2)) <= 1){
 	            $this->moveTarget = null;
-	        }
 	        
 	        if(!($this->moveTarget instanceof Vector3)){
 	            $randX = random_int($this->getFloorX() - 50, $this->getFloorX() + 50);
